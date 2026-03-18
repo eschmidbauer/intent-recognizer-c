@@ -51,8 +51,10 @@ typedef struct embedding_state embedding_state;
 
 /* Create inference state for the given model.
  * Lightweight — allocates scratch buffers for the transformer forward pass.
- * Create one per thread or per request; do not share across concurrent calls. */
-embedding_state *embedding_state_create(const embedding_model *model);
+ * Create one per thread or per request; do not share across concurrent calls.
+ * max_seq limits scratch buffer sizes (0 = use model's max_seq_len).
+ * For intent recognition, 64–128 is typically sufficient. */
+embedding_state *embedding_state_create(const embedding_model *model, int max_seq);
 
 /* Free state and scratch buffers. */
 void embedding_state_free(embedding_state *state);

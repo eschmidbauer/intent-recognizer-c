@@ -109,6 +109,7 @@ struct embedding_model {
 
 /* State: mutable per-request scratch, one per concurrent call. */
 struct embedding_state {
+    int max_seq;    /* max sequence length this state was allocated for */
     /* Transformer scratch buffers (allocated for max_seq) */
     float *x;       /* [max_seq * hidden_size] hidden states */
     float *tmp;     /* [max_seq * hidden_size] temp for norms */
@@ -879,9 +880,9 @@ void embedding_model_free(embedding_model *model) {
     free(model);
 }
 
-embedding_state *embedding_state_create(const embedding_model *model) {
+embedding_state *embedding_state_create(const embedding_model *model, int max_seq) {
     const EmbConfig *c = &model->cfg;
-    int S = c->max_seq_len;
+    int S = (max_seq > 0 && max_seq < c->max_seq_len) ? max_seq : c->max_seq_len;
     int D = c->hidden_size;
     int H = c->num_heads;
     int KVH = c->num_kv_heads;
@@ -889,6 +890,7 @@ embedding_state *embedding_state_create(const embedding_model *model) {
     int MLP = c->intermediate_size;
 
     embedding_state *st = (embedding_state *)calloc(1, sizeof(embedding_state));
+    st->max_seq = S;
     /* Transformer layer scratch */
     st->x        = (float *)malloc((size_t)S * D * sizeof(float));
     st->tmp      = (float *)malloc((size_t)S * D * sizeof(float));
@@ -932,8 +934,8 @@ int embedding_model_embed(const embedding_model *model,
     const EmbConfig *c = &model->cfg;
     int D = c->hidden_size;
 
-    /* Tokenize */
-    int seq = tokenize(model->tok_map, text, state->tokens, c->max_seq_len);
+    /* Tokenize (cap at state's allocated max_seq) */
+    int seq = tokenize(model->tok_map, text, state->tokens, state->max_seq);
     if (seq <= 2) return -1; /* only BOS+EOS, no real tokens */
 
     /* Transformer forward (uses state scratch buffers) */

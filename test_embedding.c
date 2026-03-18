@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
     embedding_model *model = embedding_model_load(argv[1]);
     if (!model) { fprintf(stderr, "Failed to load model\n"); return 1; }
 
-    embedding_state *state = embedding_state_create(model);
+    embedding_state *state = embedding_state_create(model, 128);
 
     /* --- Test 1: Basic embedding --- */
     printf("\n=== Test 1: Embedding generation ===\n");

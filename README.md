@@ -39,7 +39,8 @@ make
 embedding_model *model = embedding_model_load("models/embeddinggemma");
 
 // Create per-thread state (mutable scratch buffers)
-embedding_state *state = embedding_state_create(model);
+// Second arg caps sequence length: 128 ≈ 5.7 MB, 0 = model max (2048 ≈ 92 MB)
+embedding_state *state = embedding_state_create(model, 128);
 
 // Get a 768-dim L2-normalized embedding
 float emb[768];
@@ -61,7 +62,7 @@ embedding_model_free(model);
 ## Concurrency Model
 
 - **`embedding_model`** — immutable after load, share across threads
-- **`embedding_state`** — mutable scratch buffers, one per concurrent call
+- **`embedding_state`** — mutable scratch buffers, one per concurrent call. Pass `max_seq` to control memory usage (~5.7 MB at 128 vs ~92 MB at 2048). For intent recognition, 64-128 is typically sufficient
 - **`intent_recognizer`** — register intents during setup (single-threaded), then `process` is thread-safe with separate states
 
 ## Architecture
